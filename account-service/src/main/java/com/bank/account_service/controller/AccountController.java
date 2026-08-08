@@ -3,6 +3,8 @@ package com.bank.account_service.controller;
 import com.bank.account_service.client.CustomerClient;
 import com.bank.account_service.dto.AccountRequest;
 import com.bank.account_service.dto.AccountResponse;
+import com.bank.account_service.dto.DepositBalanceRequest;
+import com.bank.account_service.dto.WithdrawBalanceRequest;
 import com.bank.account_service.service.AccountService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -50,5 +52,15 @@ public class AccountController {
     public ResponseEntity<List<AccountResponse>> getAllAccountsByCustomerId(@PathVariable
                                                                             Long customerId){
         return ResponseEntity.ok(accountService.getAccountsByCustomerId(customerId));
+    }
+    @PutMapping("/{accountId}/withdraw")
+    public ResponseEntity<AccountResponse> withdraw(@PathVariable Long accountId,
+                                                    @Valid @RequestBody WithdrawBalanceRequest withdrawBalanceRequest){
+        return ResponseEntity.ok(accountService.withdraw(accountId,withdrawBalanceRequest));
+    }
+    @PutMapping("/{accountId}/deposit")
+    public ResponseEntity<AccountResponse> deposit(@PathVariable Long accountId,
+                                                   @Valid @RequestBody DepositBalanceRequest depositBalanceRequest){
+        return ResponseEntity.ok(accountService.deposit(accountId,depositBalanceRequest));
     }
 }

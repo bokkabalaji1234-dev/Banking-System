@@ -14,5 +14,10 @@ public final class ErrorConstants {
 
     public static final String CUSTOMER_SERVICE_ERROR =
             "CUSTOMER_SERVICE_ERROR";
+    public static final String INSUFFICIENT_BALANCE=
+            "INSUFFICIENT_BALANCE";
+    public static final String INVALID_AMOUNT =
+            "INVALID_AMOUNT";
+
 
 }

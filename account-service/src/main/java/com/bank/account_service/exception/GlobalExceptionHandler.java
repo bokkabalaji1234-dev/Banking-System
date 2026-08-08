@@ -88,4 +88,34 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(errorResponse);
     }
+    @ExceptionHandler(InvalidAmountException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidAmountException(
+            InvalidAmountException ex,HttpServletRequest request
+    ){
+        ErrorResponse errorResponse=ErrorResponse.builder()
+                .timeStamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(ErrorConstants.INVALID_AMOUNT)
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(errorResponse);
+    }
+
+    @ExceptionHandler(InsufficientAmountException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientAmountException(
+            InsufficientAmountException ex,
+            HttpServletRequest request
+    ){
+        ErrorResponse errorResponse=ErrorResponse.builder()
+                .timeStamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(ErrorConstants.INSUFFICIENT_BALANCE)
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(errorResponse);
+    }
 }

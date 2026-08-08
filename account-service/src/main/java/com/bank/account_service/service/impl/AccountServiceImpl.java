@@ -1,22 +1,24 @@
 package com.bank.account_service.service.impl;
 
 import com.bank.account_service.client.CustomerClient;
-import com.bank.account_service.dto.AccountRequest;
-import com.bank.account_service.dto.AccountResponse;
-import com.bank.account_service.dto.CustomerResponse;
+import com.bank.account_service.dto.*;
 import com.bank.account_service.entity.Account;
 import com.bank.account_service.enums.AccountStatus;
 import com.bank.account_service.exception.AccountNotFoundException;
 import com.bank.account_service.exception.CustomerServiceUnavailableException;
+import com.bank.account_service.exception.InsufficientAmountException;
+import com.bank.account_service.exception.InvalidAmountException;
 import com.bank.account_service.mapper.AccountMapper;
 import com.bank.account_service.repository.AccountRepository;
 import com.bank.account_service.service.AccountService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
@@ -140,5 +142,49 @@ public class AccountServiceImpl implements AccountService {
 
         log.info("Fetched {} accounts for customer ID: {}", responses.size(), customerId);
         return responses;
+    }
+
+    @Transactional
+    @Override
+    public AccountResponse withdraw(Long accountId, WithdrawBalanceRequest withdrawBalanceRequest) {
+        log.info("Withdraw request received for accountId: {}", accountId);
+        Account account=findAccountById(accountId);
+        BigDecimal amount=withdrawBalanceRequest.getAmount();
+        if(amount.compareTo(BigDecimal.ZERO)<=0){
+            throw new InvalidAmountException("Amount should be greater than zero");
+        }
+        if(account.getBalance().compareTo(amount)<0){
+            throw new InsufficientAmountException(
+                    String.format("Insufficient balance for accountId: %d", accountId));
+        }
+        account.setBalance(account.getBalance().subtract(amount));
+        Account savedAccount=accountRepository.save(account);
+        log.info(
+                "Withdraw successful. AccountId: {}, Remaining Balance: {}",
+                accountId,
+                savedAccount.getBalance()
+        );
+        return AccountMapper.toResponse(savedAccount);
+
+
+    }
+
+    @Transactional
+    @Override
+    public AccountResponse deposit(Long accountId, DepositBalanceRequest depositBalanceRequest) {
+        log.info("Deposit request received for accountId: {}", accountId);
+        Account account = findAccountById(accountId);
+        BigDecimal depositAmount= depositBalanceRequest.getAmount();
+        if(depositAmount.compareTo(BigDecimal.ZERO)<=0){
+            throw  new InvalidAmountException("Amount should be greater than zero");
+        }
+        account.setBalance(account.getBalance().add(depositAmount));
+        Account savedAccount= accountRepository.save(account);
+        log.info(
+                "Deposit successful. AccountId: {}, Remaining Balance: {}",
+                accountId,
+                savedAccount.getBalance()
+        );
+        return AccountMapper.toResponse(savedAccount);
     }
 }
