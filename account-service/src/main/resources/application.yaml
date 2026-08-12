@@ -1,29 +1,6 @@
-server:
-  port: 8082
 spring:
   application:
     name: account-service
-  datasource:
-    url: jdbc:mysql://localhost:3306/bank_db
-    username: root
-    password: Balaji@123
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
 
-resilience4j:
-  circuitbreaker:
-    instances:
-      customerService:
-        failure-rate-threshold: 50
-        sliding-window-size: 5
-        minimum-number-of-calls: 5
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 3
-        automatic-transition-from-open-to-half-open-enabled: true
-
+  config:
+    import: configserver:http://localhost:8888
