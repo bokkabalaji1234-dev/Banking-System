@@ -24,4 +24,6 @@ public class TransferRequest {
     private BigDecimal amount;
 
     private String description;
+
+    private String idempotencyKey;
 }

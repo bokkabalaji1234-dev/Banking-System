@@ -14,6 +14,6 @@ public interface AccountService {
     AccountResponse updateAccount(Long accountId,AccountRequest request);
     void deleteAccount(Long accountId);
     List<AccountResponse> getAccountsByCustomerId(Long customerId);
-    AccountResponse withdraw(Long accountId, WithdrawBalanceRequest withdrawBalanceRequest);
-    AccountResponse deposit(Long accountId, DepositBalanceRequest depositBalanceRequest);
+    AccountResponse withdraw(Long accountId, WithdrawBalanceRequest withdrawBalanceRequest,String idempotencyKey);
+    AccountResponse deposit(Long accountId, DepositBalanceRequest depositBalanceRequest,String idempotencyKey);
 }

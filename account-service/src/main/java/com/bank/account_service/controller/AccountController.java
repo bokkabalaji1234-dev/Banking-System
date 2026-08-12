@@ -55,12 +55,14 @@ public class AccountController {
     }
     @PutMapping("/{accountId}/withdraw")
     public ResponseEntity<AccountResponse> withdraw(@PathVariable Long accountId,
+                                                    @RequestHeader ("Idempotency-Key") String idempotencyKey,
                                                     @Valid @RequestBody WithdrawBalanceRequest withdrawBalanceRequest){
-        return ResponseEntity.ok(accountService.withdraw(accountId,withdrawBalanceRequest));
+        return ResponseEntity.ok(accountService.withdraw(accountId,withdrawBalanceRequest,idempotencyKey));
     }
     @PutMapping("/{accountId}/deposit")
     public ResponseEntity<AccountResponse> deposit(@PathVariable Long accountId,
+                                                   @RequestHeader("Idempotency-Key") String idempotencyKey,
                                                    @Valid @RequestBody DepositBalanceRequest depositBalanceRequest){
-        return ResponseEntity.ok(accountService.deposit(accountId,depositBalanceRequest));
+        return ResponseEntity.ok(accountService.deposit(accountId,depositBalanceRequest,idempotencyKey));
     }
 }

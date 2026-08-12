@@ -20,19 +20,21 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @PostMapping("/deposit")
-    public ResponseEntity<TransactionResponse> deposit(@Valid @RequestBody DepositRequest depositRequest){
+    public ResponseEntity<TransactionResponse> deposit(@Valid @RequestBody DepositRequest depositRequest,String idempotencyKey){
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(transactionService.deposit(depositRequest));
+                .body(transactionService.deposit(depositRequest,idempotencyKey));
     }
     @PostMapping("/withdraw")
-    public ResponseEntity<TransactionResponse> withdraw(@Valid @RequestBody WithdrawRequest withdrawRequest){
+    public ResponseEntity<TransactionResponse> withdraw(@Valid @RequestBody WithdrawRequest withdrawRequest,String idempotencyKey){
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(transactionService.withdraw(withdrawRequest));
+                .body(transactionService.withdraw(withdrawRequest,idempotencyKey));
     }
     @PostMapping("/transfer")
-    public ResponseEntity<TransactionResponse> transfer(@Valid @RequestBody TransferRequest transferRequest){
+    public ResponseEntity<TransactionResponse> transfer(
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody TransferRequest transferRequest){
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(transactionService.transfer(transferRequest));
+                .body(transactionService.transfer(transferRequest,idempotencyKey));
     }
     @GetMapping("/{transactionId}")
     public ResponseEntity<TransactionResponse> getTransactionById(@PathVariable Long transactionId){
