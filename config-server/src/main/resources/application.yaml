@@ -1,0 +1,15 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: CONFIG-SERVER
+
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/bokkabalaji1234-dev/banking-config.git
+          default-label: feature/banking-config
+          username: ${GITHUB_USERNAME}
+          password: ${GITHUB_TOKEN}
