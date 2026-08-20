@@ -3,6 +3,7 @@ package com.bank.account_service.service.impl;
 import com.bank.account_service.client.CustomerClient;
 import com.bank.account_service.dto.*;
 import com.bank.account_service.entity.Account;
+import com.bank.account_service.entity.IdempotencyRecord;
 import com.bank.account_service.enums.AccountStatus;
 import com.bank.account_service.exception.AccountNotFoundException;
 import com.bank.account_service.exception.CustomerServiceUnavailableException;
@@ -10,6 +11,7 @@ import com.bank.account_service.exception.InsufficientAmountException;
 import com.bank.account_service.exception.InvalidAmountException;
 import com.bank.account_service.mapper.AccountMapper;
 import com.bank.account_service.repository.AccountRepository;
+import com.bank.account_service.repository.IdempotencyRecordRepository;
 import com.bank.account_service.service.AccountService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.transaction.Transactional;
@@ -29,6 +31,7 @@ public class AccountServiceImpl implements AccountService {
 
     private final CustomerClient customerClient;
     private  final AccountRepository accountRepository;
+    private final IdempotencyRecordRepository idempotencyRecordRepository;
     private static final Logger log= LoggerFactory.getLogger(AccountServiceImpl.class);
 
     private String generateAccountNumber(){
@@ -146,9 +149,25 @@ public class AccountServiceImpl implements AccountService {
 
     @Transactional
     @Override
-    public AccountResponse withdraw(Long accountId, WithdrawBalanceRequest withdrawBalanceRequest) {
+    public AccountResponse withdraw(Long accountId, WithdrawBalanceRequest withdrawBalanceRequest,String idempotencyKey) {
         log.info("Withdraw request received for accountId: {}", accountId);
+        //1.check whether existing request was already processed
+        var existingRecord=idempotencyRecordRepository.findByIdempotencyKey(idempotencyKey);
+        if(existingRecord.isPresent()){
+            log.warn(
+                    "DUPLICATE REQUEST DETECTED! Idempotency-Key: {}. " +
+                            "WITHDRAW will NOT be processed again.",
+                    idempotencyKey
+            );
+            IdempotencyRecord record=existingRecord.get();
+            //for now return current account status
+            AccountResponse response=AccountMapper.toResponse(findAccountById(accountId));
+            response.setBalance(record.getBalanceAfterOperation());
+            return response;
+        }
+        //2.Find the Account
         Account account=findAccountById(accountId);
+        //3.Valid the Amount
         BigDecimal amount=withdrawBalanceRequest.getAmount();
         if(amount.compareTo(BigDecimal.ZERO)<=0){
             throw new InvalidAmountException("Amount should be greater than zero");
@@ -157,32 +176,73 @@ public class AccountServiceImpl implements AccountService {
             throw new InsufficientAmountException(
                     String.format("Insufficient balance for accountId: %d", accountId));
         }
+        //4.update the amount
         account.setBalance(account.getBalance().subtract(amount));
+        //5.save the account
         Account savedAccount=accountRepository.save(account);
+        //6.save idempotency record
+        IdempotencyRecord record=IdempotencyRecord.builder()
+                .idempotencyKey(idempotencyKey)
+                .accountId(accountId)
+                .operation("WITHDRAW")
+                .status("SUCCESS")
+                .balanceAfterOperation(savedAccount.getBalance())
+                .createdAt(LocalDateTime.now())
+                .build();
+        idempotencyRecordRepository.save(record);
         log.info(
                 "Withdraw successful. AccountId: {}, Remaining Balance: {}",
                 accountId,
+                amount,
                 savedAccount.getBalance()
         );
         return AccountMapper.toResponse(savedAccount);
-
-
     }
 
     @Transactional
     @Override
-    public AccountResponse deposit(Long accountId, DepositBalanceRequest depositBalanceRequest) {
+    public AccountResponse deposit(Long accountId, DepositBalanceRequest depositBalanceRequest,String idempotencyKey) {
         log.info("Deposit request received for accountId: {}", accountId);
+        // 1. Check whether this request was already processed
+        var existingRecord= idempotencyRecordRepository.findByIdempotencyKey(idempotencyKey);
+        if(existingRecord.isPresent()){
+            log.warn(
+                    "DUPLICATE REQUEST DETECTED! Idempotency-Key: {}. " +
+                            "Deposit will NOT be processed again.",
+                    idempotencyKey
+            );
+            IdempotencyRecord record=existingRecord.get();
+            AccountResponse response=AccountMapper.toResponse(
+                    findAccountById(accountId));
+            //For now, return the current account state
+            response.setBalance(record.getBalanceAfterOperation());
+            return response;
+        }
+        //2.Find the Account
         Account account = findAccountById(accountId);
+        //3.Valid the amount
         BigDecimal depositAmount= depositBalanceRequest.getAmount();
         if(depositAmount.compareTo(BigDecimal.ZERO)<=0){
             throw  new InvalidAmountException("Amount should be greater than zero");
         }
+        //4.Update the Balance
         account.setBalance(account.getBalance().add(depositAmount));
+        //5.save account
         Account savedAccount= accountRepository.save(account);
+       //  6.save idempotencyRecord
+        IdempotencyRecord record=IdempotencyRecord.builder()
+                .idempotencyKey(idempotencyKey)
+                .accountId(accountId)
+                .operation("DEPOSIT")
+                .status("SUCCESS")
+                .balanceAfterOperation(savedAccount.getBalance())
+                .createdAt(LocalDateTime.now())
+                .build();
+        idempotencyRecordRepository.save(record);
         log.info(
-                "Deposit successful. AccountId: {}, Remaining Balance: {}",
+                "Deposit successful. AccountId: {}, Amount: {}, Balance: {}",
                 accountId,
+                depositAmount,
                 savedAccount.getBalance()
         );
         return AccountMapper.toResponse(savedAccount);

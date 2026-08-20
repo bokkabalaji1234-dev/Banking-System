@@ -1,24 +1,31 @@
 server:
   port: 8080
+
 spring:
   application:
     name: api-gateway
+
   cloud:
     gateway:
-      mvc:
-        routes:
-          - id: customer-service
-            uri: lb://CUSTOMER-SERVICE
-            predicates:
-              - Path=/customer/**
+      server:
+        webmvc:
+          routes:
 
-          - id: account-service
-            uri: lb://ACCOUNT-SERVICE
-            predicates:
-              - Path=/accounts/**
+            - id: customer-service
+              uri: lb://CUSTOMER-SERVICE
+              predicates:
+                - Path=/customers/**
+
+            - id: account-service
+              uri: lb://ACCOUNT-SERVICE
+              predicates:
+                - Path=/accounts/**
+            - id: transaction-service
+              uri: lb://TRANSACTION_SERVICE
+              predicates:
+                - Path=/transactions/**
+
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
-
-

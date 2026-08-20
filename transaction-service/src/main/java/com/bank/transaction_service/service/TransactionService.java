@@ -8,9 +8,9 @@ import com.bank.transaction_service.dto.WithdrawRequest;
 import java.util.List;
 
 public interface TransactionService  {
-    TransactionResponse deposit(DepositRequest depositRequest);
-    TransactionResponse withdraw(WithdrawRequest withdrawRequest);
-    TransactionResponse transfer(TransferRequest transferRequest);
+    TransactionResponse deposit(DepositRequest depositRequest,String idempotencyKey);
+    TransactionResponse withdraw(WithdrawRequest withdrawRequest,String idempotencyKey);
+    TransactionResponse transfer(TransferRequest transferRequest, String idempotencyKey);
     TransactionResponse getTransactionById(Long transactionId);
     List<TransactionResponse> getTransactionsByAccountId(Long accountId);
 }
