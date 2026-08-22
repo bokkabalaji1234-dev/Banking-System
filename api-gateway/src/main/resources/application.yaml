@@ -8,7 +8,7 @@ spring:
   cloud:
     gateway:
       server:
-        webmvc:
+        webflux:
           routes:
 
             - id: customer-service
@@ -20,8 +20,9 @@ spring:
               uri: lb://ACCOUNT-SERVICE
               predicates:
                 - Path=/accounts/**
+
             - id: transaction-service
-              uri: lb://TRANSACTION_SERVICE
+              uri: lb://TRANSACTION-SERVICE
               predicates:
                 - Path=/transactions/**
 
