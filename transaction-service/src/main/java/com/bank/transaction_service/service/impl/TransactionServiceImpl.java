@@ -74,6 +74,10 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Transactional
+    @Retry(name = "accountService")
+    @CircuitBreaker(
+            name = "accountService",
+            fallbackMethod = "withdrawFallback")
     @Override
     public TransactionResponse withdraw(WithdrawRequest withdrawRequest,String idempotencyKey) {
         log.info("Withdraw transaction started for accountId: {}",
@@ -227,6 +231,21 @@ public class TransactionServiceImpl implements TransactionService {
                 "Compensation completed successfully. AccountId: {}, Amount: {}",
                 accountId,
                 amount
+        );
+    }
+    private TransactionResponse depositFallback(
+            DepositRequest depositRequest,
+            String idempotencyKey,
+            Throwable throwable) {
+
+        log.error(
+                "Account Service unavailable during deposit. AccountId: {}",
+                depositRequest.getAccountId(),
+                throwable
+        );
+
+        throw new RuntimeException(
+                "Account Service is currently unavailable. Please try again later."
         );
     }
 }
